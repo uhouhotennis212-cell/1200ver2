@@ -20,7 +20,7 @@ from collections import Counter
 # ページ設定
 # ============================================================
 st.set_page_config(
-    page_title="LPI v11 競馬予想",
+    page_title="LPI v11 競馬予想（1200m専用）",
     page_icon="🏇",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -1183,6 +1183,7 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
             'n_senkou_win': n_senkou_win,
             'n_runs_used': len(use),
             'used_1200m_only': len(runs_1200) >= 2,
+            'venue_delta': round(lpi_venue - lpi, 1),
         })
 
     return results
@@ -1508,7 +1509,7 @@ def plot_ranking(results, race_name, target_venue):
 # ============================================================
 # Streamlit UI
 # ============================================================
-st.title('🏇 LPI v11 競馬予想ツール')
+st.title('🏇 LPI v11 競馬予想ツール（1200m専用）')
 st.caption('LPI (ラップ強さ指数) v11 — 位置取り補正・グレード加重・斤量補正・競馬場適合ボーナス対応')
 
 # ---- サイドバー ----
@@ -1528,10 +1529,10 @@ with st.sidebar:
         type='csv', key='entry')
 
     st.subheader('③ レース設定')
-    race_name    = st.text_input('レース名', value='2026 安田記念G1')
+    race_name    = st.text_input('レース名', value='2026 高松宮記念G1')
     target_venue = st.selectbox(
         '競馬場',
-        ['東京','中山','京都','阪神','中京','新潟','福島','小倉','札幌','函館'])
+        ['中京','中山','京都','阪神','新潟','福島','小倉','札幌','函館','東京'])
     target_track = st.radio('トラック', ['T（芝）','D（ダート）'])
     track_code   = 'T' if target_track.startswith('T') else 'D'
     bonus_strength = st.slider(
@@ -1539,7 +1540,8 @@ with st.sidebar:
         help='0=ボーナスなし / 0.15=標準 / 0.30=強め')
 
     st.subheader('④ ペース予測（任意）')
-    race_dist = st.number_input('レース距離（m）', min_value=1000, max_value=3600, value=1600, step=200)
+    race_dist = 1200  # 本ページは1200m専用のため距離固定（選択UIなし）
+    st.caption('🟣 本ページは1200m専用です（距離は1200mに固定）')
     nige_count   = st.number_input('逃げ馬頭数', min_value=0, max_value=10, value=0, step=1,
                                    help='出走表の決め手=逃げの馬の頭数')
     senkou_count = st.number_input('先行馬頭数', min_value=0, max_value=16, value=0, step=1,
@@ -1804,7 +1806,7 @@ if run_btn or (base_file and entry_file):
             plpi  = [round(rn['lpi'], 1) for rn in past]
             while len(plpi) < 5: plpi.append('-')
 
-            delta = r['venue_delta']
+            delta = r.get('venue_delta', 0.0)
             # ペース適合判定
             pace_match = r['dom_elem'] in pace['elem_adv'] if pace['elem_adv'] else None
             pace_mark = '◎' if pace_match else ('△' if pace_match is False else '-')
