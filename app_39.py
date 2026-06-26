@@ -1171,6 +1171,17 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
         lpi = sigmoid_score(z_final)
         lpi_venue = apply_venue_bonus(target_venue, '不明', lpi, 0.15)
 
+        # ランキング表の「1走前」〜「5走前」列で使うため、各走に個別LPIを付与する
+        # （use内の各走は新しい順に並んでいるのでそのまま1走前→5走前に対応）
+        runs_for_table = []
+        for r in use:
+            runs_for_table.append({
+                **r,
+                'lpi': sigmoid_score(r['z']),
+                'hb': 0.0, 'hb_r': '',
+                'excluded_baba': False, 'excluded_track': False,
+            })
+
         results.append({
             'horse': horse,
             'avg_lpi': round(lpi, 1),
@@ -1184,6 +1195,7 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
             'n_runs_used': len(use),
             'used_1200m_only': len(runs_1200) >= 2,
             'venue_delta': round(lpi_venue - lpi, 1),
+            'runs': runs_for_table,
         })
 
     return results
@@ -1683,7 +1695,7 @@ if run_btn or (base_file and entry_file):
                     ),
                     'n_valid': r['n_runs_used'], 'n_total': r['n_runs_used'],
                     'dom_elem': '1200m専用', 'coef': 1.0,
-                    'runs': [], 'pos_pred': None, 'agari_pred': None,
+                    'pos_pred': None, 'agari_pred': None,
                 })
             st.info(
                 f'🟣 1200m専用AIモードで計算しました（距離{race_dist}m）。'
@@ -1869,6 +1881,28 @@ if run_btn or (base_file and entry_file):
                 bakuketsu_str = '🟣爆穴候補'
             else:
                 bakuketsu_str = '-'
+
+            if is_1200m_mode:
+                # 1200m専用モードはシンプルな専用列構成にする
+                # （汎用モード用のPCI追走・末脚能力・過去ポジション等は表示しない）
+                detail_1200 = r.get('g1_bonus_detail', '')
+                rows.append({
+                    '順位':           i + 1,
+                    '馬名':           r['horse'],
+                    f'LPI[{target_venue}補正]': r['avg_venue_lpi'],
+                    'LPI基本':        r['avg_lpi'],
+                    '1200m補正内訳':  detail_1200,
+                    '使用走数':       f"{r.get('n_runs_used','-')}走",
+                    '1200m限定使用':  '✅' if r.get('used_1200m_only') else '（他距離補完）',
+                    '格上挑戦':       '⚠️注意' if r.get('is_kakuwami') else '-',
+                    '1走前':          plpi[0],
+                    '2走前':          plpi[1],
+                    '3走前':          plpi[2],
+                    '4走前':          plpi[3],
+                    '5走前':          plpi[4],
+                    '爆穴候補':       bakuketsu_str,
+                })
+                continue
 
             rows.append({
                 '順位':           i + 1,
