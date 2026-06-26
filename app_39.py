@@ -1173,7 +1173,7 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
         lpi = sigmoid_score(z_final)
         lpi_venue = apply_venue_bonus(target_venue, '不明', lpi, 0.15)
 
-        # ランキング表の「1走前」〜「5走前」列で使うため、各走に個別LPIを付与する
+        # ランキング表・過去走詳細タブで使うため、各走に個別LPI等を付与する
         # （use内の各走は新しい順に並んでいるのでそのまま1走前→5走前に対応）
         runs_for_table = []
         for r in use:
@@ -1181,6 +1181,7 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
                 **r,
                 'lpi': sigmoid_score(r['z']),
                 'hb': 0.0, 'hb_r': '',
+                'pb': 0.0, 'wt_corr': 0.0, 'elem': '1200m専用',
                 'excluded_baba': False, 'excluded_track': False,
             })
 
@@ -1813,13 +1814,13 @@ if run_btn or (base_file and entry_file):
 
         rows = []
         for i, r in enumerate(results):
-            bonus_runs = [rn for rn in r['runs'] if rn['hb'] > 0]
+            bonus_runs = [rn for rn in r['runs'] if rn.get('hb', 0) > 0]
             bonus_str  = ' / '.join(
-                [f"{rn['race']}({rn['hb_r']})" for rn in bonus_runs])
+                [f"{rn.get('race','-')}({rn.get('hb_r','')})" for rn in bonus_runs])
             g1_bonus_str = (f"+{r['g1_lpi_bonus']:.1f}({r['g1_bonus_detail']})"
                            if r.get('g1_lpi_bonus', 0) > 0 else '-')
             past  = [rn for rn in r['runs']
-                     if not rn['excluded_baba'] and not rn['excluded_track']][:5]
+                     if not rn.get('excluded_baba') and not rn.get('excluded_track')][:5]
             plpi  = [round(rn['lpi'], 1) for rn in past]
             while len(plpi) < 5: plpi.append('-')
 
@@ -2037,26 +2038,26 @@ if run_btn or (base_file and entry_file):
             run_rows = []
             for rn in hr['runs']:
                 excl_reason = []
-                if rn['excluded_baba']:  excl_reason.append('重/不良')
-                if rn['excluded_track']: excl_reason.append('トラック違い')
+                if rn.get('excluded_baba'):  excl_reason.append('重/不良')
+                if rn.get('excluded_track'): excl_reason.append('トラック違い')
                 run_rows.append({
-                    '走前':     rn['n'],
-                    'レース名': rn['race'],
-                    '競馬場':   rn['venue'],
-                    '距離':     int(rn['dist']),
-                    '馬場':     rn['baba'],
-                    'RPCI':     rn['rpci'],
-                    '地点差':   rn['gap_est'],
-                    '上がり':   rn['agari'],
-                    '斤量補正': rn['wt_corr'],
-                    'Zスコア':  rn['z'],
-                    'pb(位置補正)': rn['pb'],
-                    'hb(不利B)':   rn['hb'],
-                    'LPI':      rn['lpi'],
-                    '要素型':   rn['elem'],
+                    '走前':     rn.get('n', '-'),
+                    'レース名': rn.get('race', '-'),
+                    '競馬場':   rn.get('venue', '-'),
+                    '距離':     int(rn['dist']) if rn.get('dist') is not None else '-',
+                    '馬場':     rn.get('baba', '-'),
+                    'RPCI':     rn.get('rpci', '-'),
+                    '地点差':   rn.get('gap_est', '-'),
+                    '上がり':   rn.get('agari', '-'),
+                    '斤量補正': rn.get('wt_corr', 0.0),
+                    'Zスコア':  rn.get('z', '-'),
+                    'pb(位置補正)': rn.get('pb', 0.0),
+                    'hb(不利B)':   rn.get('hb', 0.0),
+                    'LPI':      rn.get('lpi', '-'),
+                    '要素型':   rn.get('elem', '-'),
                     '前半速度Z': rn.get('front_pace_z', '-'),
                     '除外':     '⚠️ ' + '/'.join(excl_reason) if excl_reason else '✅',
-                    '不利理由': rn['hb_r'],
+                    '不利理由': rn.get('hb_r', ''),
                 })
 
             run_df = pd.DataFrame(run_rows)
