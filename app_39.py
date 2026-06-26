@@ -1204,6 +1204,9 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
             'runs': runs_for_table,
         })
 
+    # 汎用calc_lpiと同様、LPI降順でソートして返す
+    # （これが無いと「ランキング表の順位」が出走表の記載順のままになってしまう）
+    results.sort(key=lambda x: -x['avg_venue_lpi'])
     return results
 
 # ============================================================
