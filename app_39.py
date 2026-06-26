@@ -1123,6 +1123,8 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
                 track = td if td in ('T', 'D') else 'T'
                 gap_raw = row.get(wd['gap'], None)
                 gap   = float(gap_raw) if str(gap_raw).strip() not in ['nan', 'NaN', '', 'None', '----'] else None
+                rpci_raw = row.get(wd.get('rpci'), None)
+                rpci  = float(rpci_raw) if str(rpci_raw).strip() not in ['nan', 'NaN', '', 'None', '----'] else None
             except Exception:
                 continue
             if math.isnan(agari): continue
@@ -1135,9 +1137,9 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
             gw = GRADE_WEIGHT.get(grade, GRADE_WEIGHT[''])
 
             all_runs.append({
-                'race': race, 'dist': dist, 'venue': venue, 'z': z,
+                'n': wd['n'], 'race': race, 'dist': dist, 'venue': venue, 'z': z,
                 'rank_int': rank_int, 'gap_est': gap_est, 'grade_weight': gw,
-                'grade': grade,
+                'grade': grade, 'baba': baba, 'rpci': rpci, 'agari': agari,
             })
 
         if not all_runs:
@@ -1182,6 +1184,8 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
                 'excluded_baba': False, 'excluded_track': False,
             })
 
+        n_good = sum(1 for r in use if r['rank_int'] and r['rank_int'] <= 3)
+
         results.append({
             'horse': horse,
             'avg_lpi': round(lpi, 1),
@@ -1193,6 +1197,7 @@ def calc_lpi_1200m(entry_bytes, base_dict, 稍重_dict,
             'is_kakuwami': is_kakuwami,
             'n_senkou_win': n_senkou_win,
             'n_runs_used': len(use),
+            'n_good': n_good,
             'used_1200m_only': len(runs_1200) >= 2,
             'venue_delta': round(lpi_venue - lpi, 1),
             'runs': runs_for_table,
